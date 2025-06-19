@@ -1,1 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lobo Sabio TTS</title>
+</head>
+<body style="font-family: sans-serif; padding: 2em;">
+  <h1>🧠 Voz del Lobo Sabio</h1>
+  <form method="POST">
+    <textarea name="texto" rows="5" cols="50" placeholder="Escribe aquí lo que dirá el lobo..." required></textarea><br><br>
+    <button type="submit">Generar Voz</button>
+  </form>
+
+  {% if audio_file %}
+    <h2>✅ Audio generado:</h2>
+    <audio controls>
+      <source src="{{ url_for('static', filename='audios/' ~ audio_file) }}" type="audio/wav">
+      Tu navegador no soporta audio.
+    </audio><br>
+    <a href="{{ url_for('download_file', filename=audio_file) }}">📥 Descargar</a>
+  {% endif %}
+</body>
+</html>
 
