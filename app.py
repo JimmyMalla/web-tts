@@ -17,8 +17,8 @@ def index():
         texto = request.form["texto"]
         nombre_archivo = "voz_lobo_generada.wav"
         ruta_salida = os.path.join("static", "audios", nombre_archivo)
-        ruta_muestra = os.path.join("samples", "voz_sabio.wav")
-
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        ruta_muestra = os.path.join(BASE_DIR, "samples", "voz_sabio.wav")
         # Genera el audio con la voz clonada
         tts.tts_to_file(
             text=texto,
