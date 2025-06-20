@@ -1,30 +1,40 @@
 from flask import Flask, render_template, request, send_from_directory
 from TTS.api import TTS
 import os
-from datetime import datetime
+os.makedirs ("static/audios", exist_ok=True)
 
 app = Flask(__name__)
 
-# Cargar el modelo español de Coqui
-tts = TTS(model_name="tts_models/es/mai/tacotron2-DDC")
+# Carga el modelo solo una vez
+tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
+
+# Asegura la carpeta de salida
+os.makedirs("static/audios", exist_ok=True)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         texto = request.form["texto"]
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        nombre_archivo = f"voz_lobo_{timestamp}.wav"
-        ruta_salida = os.path.join("static/audios", nombre_archivo)
+        nombre_archivo = "voz_lobo_generada.wav"
+        ruta_salida = os.path.join("static", "audios", nombre_archivo)
+        ruta_muestra = os.path.join("samples", "voz_sabio.wav")
 
-        tts.tts_to_file(text=texto, file_path=ruta_salida)
+        # Genera el audio con la voz clonada
+        tts.tts_to_file(
+            text=texto,
+            file_path=ruta_salida,
+            speaker_wav=ruta_muestra,
+            language="es"
+        )
 
-        return render_template("index.html", audio_file=nombre_archivo)
+        return render_template("index.html", audio=nombre_archivo)
 
-    return render_template("index.html", audio_file=None)
+    return render_template("index.html", audio=None)
 
-@app.route("/download/<filename>")
+# Ruta para servir el audio
+@app.route("/static/audios/<path:filename>")
 def download_file(filename):
-    return send_from_directory("static/audios", filename, as_attachment=True)
+    return send_from_directory("static/audios", filename)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
