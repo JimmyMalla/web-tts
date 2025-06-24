@@ -2,45 +2,93 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Texto a Voz SoyCódigo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Texto a Voz - SoyCódigo</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 50px;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2em;
+      gap: 2em;
     }
-    textarea {
-      width: 80%;
-      max-width: 600px;
-      height: 100px;
+    .container {
+      background: white;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 400px;
     }
-    button {
+    .history {
+      background: #fff;
+      padding: 1em;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      height: 100%;
+      overflow-y: auto;
+      width: 300px;
+    }
+    textarea, select, button {
+      width: 100%;
       margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    h1 {
+      text-align: center;
+      color: #2a2a2a;
     }
     audio {
-      margin-top: 20px;
+      margin-top: 1em;
+      width: 100%;
+    }
+    .check {
+      color: green;
+      font-weight: bold;
+      margin-top: 1em;
+    }
+    .download {
+      display: block;
+      text-align: center;
+      margin-top: 1em;
     }
   </style>
 </head>
 <body>
-  <h1>🧠 Texto a Voz - SoyCódigo</h1>
-  <form method="POST">
-    <textarea name="texto" placeholder="Escribe aquí lo que dirá el lobo sabio..." required></textarea><br>
-    <button type="submit">Generar Voz</button>
-  </form>
+  <div class="container">
+    <h1>🧠 Texto a Voz - SoyCódigo</h1>
+    <form method="POST">
+      <textarea name="texto" rows="4" placeholder="Escribe aquí lo que dirá el lobo sabio..." required></textarea>
+      <select name="voz">
+        {% for voice in voces %}
+          <option value="{{ voice }}" {% if voice == 'es-EC-LuisNeural' %}selected{% endif %}>{{ voice }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Generar Voz</button>
+    </form>
 
-  {% if audio_file %}
-    <h2>✅ Voz generada:</h2>
-    <audio controls>
-      <source src="{{ url_for('static', filename='audios/' + audio_file) }}" type="audio/mp3">
-      Tu navegador no soporta audio.
-    </audio><br>
-    <a href="{{ url_for('descargar_audio', filename=audio_file) }}">📥 Descargar Audio</a>
-  {% endif %}
+    {% if audio_file %}
+      <div class="check">✅ Voz generada:
+      </div>
+      <audio controls>
+        <source src="{{ url_for('static', filename='audios/' ~ audio_file) }}" type="audio/mpeg">
+        Tu navegador no soporta audio.
+      </audio>
+      <a class="download" href="{{ url_for('descargar_audio', filename=audio_file) }}">💾 Descargar Audio</a>
+    {% endif %}
+  </div>
+
+  <div class="history">
+    <h3>Historial</h3>
+    <ul>
+      {% for texto in historial %}
+        <li>{{ texto }}</li>
+      {% endfor %}
+    </ul>
+  </div>
 </body>
 </html>
 
