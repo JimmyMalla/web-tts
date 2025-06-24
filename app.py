@@ -1,58 +1,48 @@
-from flask import Flask, render_template, request, send_from_directory, session, redirect
+from flask import Flask, render_template, request, send_from_directory
 import asyncio
 import edge_tts
 import os
+import glob
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'voz_lobo_sabio_123'  # Necesario para usar session
 os.makedirs("static/audios", exist_ok=True)
 
-# Lista de voces en español disponibles
+# Lista de voces en español (puedes expandirla con más opciones si deseas)
 VOCES_ES = [
-    "es-EC-LuisNeural", "es-AR-TomasNeural", "es-BO-MarceloNeural",
-    "es-CL-LorenzoNeural", "es-CO-GonzaloNeural", "es-CR-JuanNeural",
-    "es-CU-ManuelNeural", "es-DO-RamónNeural", "es-ES-AlvaroNeural",
-    "es-GQ-JavierNeural", "es-GT-AndresNeural", "es-HN-CarlosNeural",
-    "es-MX-JorgeNeural", "es-NI-JoseNeural", "es-PA-RobertoNeural",
-    "es-PE-AlexNeural", "es-PR-GabrielNeural", "es-PY-MarioNeural",
-    "es-SV-RodrigoNeural", "es-US-AlonsoNeural", "es-UY-MateoNeural",
-    "es-VE-SebastianNeural"
+    "es-EC-LuisNeural", "es-ES-AlvaroNeural", "es-ES-ElviraNeural",
+    "es-MX-JorgeNeural", "es-MX-DaliaNeural", "es-US-AlonsoNeural",
+    "es-US-PalomaNeural"
 ]
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     audio_file = None
-    texto_actual = ""
+    texto_generado = None
     voz_seleccionada = "es-EC-LuisNeural"
 
-    if "historial" not in session:
-        session["historial"] = []
-
     if request.method == "POST":
-        texto_actual = request.form["texto"]
-        voz_seleccionada = request.form["voz"]
-
-        # Generar nombre único para el archivo
+        texto = request.form["texto"]
+        voz = request.form.get("voz", voz_seleccionada)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         nombre_archivo = f"voz_{timestamp}.mp3"
-        ruta_salida = os.path.join("static", "audios", nombre_archivo)
+        ruta_archivo = os.path.join("static", "audios", nombre_archivo)
 
-        # Ejecutar generación de voz
-        asyncio.run(generar_voz(texto_actual, voz_seleccionada, ruta_salida))
-
-        # Agregar al historial
-        session["historial"].append({"texto": texto_actual, "archivo": nombre_archivo})
-        session.modified = True
+        asyncio.run(generar_voz(texto, voz, ruta_archivo))
+        limpiar_audios()  # Limpiar audios antiguos
 
         audio_file = nombre_archivo
+        texto_generado = texto
+        voz_seleccionada = voz
 
-    return render_template("index.html",
-                           audio_file=audio_file,
-                           historial=session["historial"],
-                           voces=VOCES_ES,
-                           voz_actual=voz_seleccionada,
-                           texto_actual=texto_actual)
+    # Historial de audios
+    historial = sorted(
+        glob.glob("static/audios/*.mp3"),
+        key=os.path.getmtime,
+        reverse=True
+    )
+
+    return render_template("index.html", audio_file=audio_file, texto=texto_generado, historial=historial, voces=VOCES_ES, voz_actual=voz_seleccionada)
 
 @app.route("/static/audios/<path:filename>")
 def descargar_audio(filename):
@@ -62,12 +52,17 @@ async def generar_voz(texto, voz, ruta_archivo):
     communicate = edge_tts.Communicate(
         text=texto,
         voice=voz,
-        rate="-10%", pitch="-2Hz"
+        rate="-10%",
+        pitch="-2Hz"
     )
     await communicate.save(ruta_archivo)
 
+def limpiar_audios(max_audios=50):
+    archivos = sorted(glob.glob("static/audios/*.mp3"), key=os.path.getmtime)
+    while len(archivos) > max_audios:
+        os.remove(archivos[0])
+        archivos.pop(0)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
-
 
